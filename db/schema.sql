@@ -29,19 +29,25 @@ CREATE TABLE IF NOT EXISTS `expenses` (
     CONSTRAINT `fk_expenses_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
-CREATE TABLE IF NOT EXISTS `loans` (
+/* Loan repayments table mapped to loan form */
+CREATE TABLE IF NOT EXISTS `loan_repayments` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `user_id` INT UNSIGNED NOT NULL,
-    `principal` DECIMAL(15, 2) NOT NULL,
-    `interest_rate_annual` DECIMAL(7, 4) NOT NULL,
+    `loan_name` VARCHAR(120) NOT NULL,
+    `total_months` INT UNSIGNED NOT NULL,
+    `amount_per_month` DECIMAL(15, 2) NOT NULL,
+    `interest_percent` DECIMAL(7, 4) NOT NULL,
     `currency` CHAR(3) NOT NULL,
-    `start_date` DATE NOT NULL,
-    `term_months` INT UNSIGNED NOT NULL,
-    `description` VARCHAR(255) NULL,
+    `paid_months` INT UNSIGNED NOT NULL DEFAULT 0,
+    `total_loan` DECIMAL(15, 2) AS (
+        (
+            `total_months` * `amount_per_month`
+        ) * (1 + `interest_percent` / 100)
+    ) STORED,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    KEY `idx_loans_user` (`user_id`),
-    CONSTRAINT `fk_loans_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+    KEY `idx_loan_repayments_user` (`user_id`),
+    CONSTRAINT `fk_loan_repayments_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `goals` (
