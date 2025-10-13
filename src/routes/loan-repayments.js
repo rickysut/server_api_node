@@ -106,3 +106,73 @@ router.delete("/:id", requireAuth, async (req, res) => {
 
 export default router;
 
+// GET /api/loan-repayments/:id/schedule
+router.get("/:id/schedule", requireAuth, async (req, res) => {
+  const id = req.params.id;
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, user_id, loan_name AS loanName, total_months AS totalMonths, amount_per_month AS monthlyPayment, interest_percent AS interestPercent, currency, paid_months AS paidMonths
+       FROM loan_repayments WHERE id = ? AND user_id = ?`,
+      [id, req.user.id]
+    );
+    if (!rows.length) return res.status(404).json({ message: "Not found" });
+
+    const loan = rows[0];
+    const totalMonths = Number(loan.totalMonths);
+    const paidMonths = Number(loan.paidMonths || 0);
+    const monthlyPayment = Number(loan.monthlyPayment);
+    const r = Number(loan.interestPercent) / 12 / 100;
+
+    // For a simple schedule: assume remaining balance equals remaining months * monthlyPayment (naive),
+    // but with interest we split payment into interest/principal parts on the fly.
+    // If r == 0, it's straightforward linear payoff.
+    let balance;
+    if (r === 0) {
+      balance = monthlyPayment * (totalMonths - paidMonths);
+    } else {
+      // If payment is fixed, approximate remaining balance for an installment loan
+      // Remaining balance after n payments: P * (1+r)^n - A * [((1+r)^n - 1) / r]
+      // We don't have original principal P; however, totalMonths and monthlyPayment are stored, not P.
+      // Derive P from A, r, N: P = A * (1 - (1+r)^-N) / r
+      const N = totalMonths;
+      const A = monthlyPayment;
+      const P = r === 0 ? A * N : A * (1 - Math.pow(1 + r, -N)) / r;
+      const n = paidMonths;
+      balance = P * Math.pow(1 + r, n) - A * ((Math.pow(1 + r, n) - 1) / r);
+    }
+
+    const series = [];
+    let currentBalance = balance;
+    const remainingMonths = Math.max(0, totalMonths - paidMonths);
+    for (let i = 0; i < remainingMonths; i++) {
+      if (r === 0) {
+        const interest = 0;
+        const principal = Math.min(monthlyPayment, currentBalance);
+        currentBalance = Math.max(0, currentBalance - principal);
+        series.push({ monthIndex: paidMonths + i + 1, interest, principal, balance: Number(currentBalance.toFixed(2)) });
+      } else {
+        const interest = currentBalance * r;
+        let principal = monthlyPayment - interest;
+        if (principal < 0) principal = 0; // avoid negative when payment too small
+        if (principal > currentBalance) principal = currentBalance;
+        currentBalance = Math.max(0, currentBalance - principal);
+        series.push({ monthIndex: paidMonths + i + 1, interest: Number(interest.toFixed(2)), principal: Number(principal.toFixed(2)), balance: Number(currentBalance.toFixed(2)) });
+      }
+    }
+
+    res.json({
+      summary: {
+        totalMonths,
+        paidMonths,
+        monthlyPayment,
+        interestPercent: Number(loan.interestPercent),
+        remainingBalance: Number(balance.toFixed(2)),
+        currency: loan.currency,
+      },
+      series,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
