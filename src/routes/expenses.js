@@ -22,7 +22,7 @@ const summaryQuerySchema = Joi.object({
 router.get("/", requireAuth, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT id, amount, currency, category, description, occurred_at FROM expenses WHERE user_id = ? ORDER BY occurred_at DESC",
+      "SELECT id, amount, currency, category, description, DATE_FORMAT(occurred_at, '%d/%m/%Y') AS occurredAt FROM expenses WHERE user_id = ? ORDER BY occurred_at DESC",
       [req.user.id]
     );
     res.json(rows);
@@ -99,7 +99,8 @@ router.get("/summary", requireAuth, async (req, res) => {
   let groupExpr;
   switch (period) {
     case "day":
-      groupExpr = "DATE(occurred_at)";
+      // Return canonical day string in dd/mm/yyyy
+      groupExpr = "DATE_FORMAT(occurred_at, '%d/%m/%Y')";
       break;
     case "week":
       // ISO week year-week
