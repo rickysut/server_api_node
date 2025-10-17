@@ -6,10 +6,8 @@ import cors from "cors";
 
 import { router as authRouter } from "./routes/auth.js";
 import { router as expensesRouter } from "./routes/expenses.js";
-import { router as loansRouter } from "./routes/loans.js";
-import { router as goalsRouter } from "./routes/goals.js";
-import { router as currencyRouter } from "./routes/currency.js";
-import loanRepaymentsRouter from "./routes/loan-repayments.js";
+import { router as loansRouter } from "./routes/loan-repayments.js";
+
 
 const app = express();
 
@@ -23,9 +21,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/expenses", expensesRouter);
 app.use("/api/loans", loansRouter);
-app.use("/api/goals", goalsRouter);
-app.use("/api/currency", currencyRouter);
-app.use("/api/loan-repayments", loanRepaymentsRouter);
+
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

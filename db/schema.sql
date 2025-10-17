@@ -1,7 +1,7 @@
 /* Create database */
-CREATE DATABASE IF NOT EXISTS `grad_finance_tracker` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS `finance_tracker` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-USE `grad_finance_tracker`;
+USE `finance_tracker`;
 
 CREATE TABLE IF NOT EXISTS `users` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -48,18 +48,4 @@ CREATE TABLE IF NOT EXISTS `loan_repayments` (
     PRIMARY KEY (`id`),
     KEY `idx_loan_repayments_user` (`user_id`),
     CONSTRAINT `fk_loan_repayments_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `goals` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `user_id` INT UNSIGNED NOT NULL,
-    `name` VARCHAR(120) NOT NULL,
-    `target_amount` DECIMAL(15, 2) NOT NULL,
-    `currency` CHAR(3) NOT NULL,
-    `target_date` DATE NOT NULL,
-    `current_amount` DECIMAL(15, 2) NOT NULL DEFAULT 0,
-    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`),
-    KEY `idx_goals_user` (`user_id`),
-    CONSTRAINT `fk_goals_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE = InnoDB;
